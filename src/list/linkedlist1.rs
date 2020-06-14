@@ -43,6 +43,14 @@ impl<T> Drop for List<T> {
         let mut head = self.head.take();
         while let Some(mut node) = head {
             head = node.next.take();
+            // node goes out of scope and gets dropped here;
+            // but its Node's `next` field has been set to None by take() method,
+            // so no unbounded recursion occurs.
+
+            //Yuanguo:
+            //  head = node.next;
+            //should be fine too, because node.next is moved (not a None or Some, just uninitialized),
+            //so, no destruction work to do;
         }
     }
 }

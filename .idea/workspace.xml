@@ -4,7 +4,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fa073dfd-b2b1-48f6-a6c7-b9d5840c4e7f" name="Default Changelist" comment="" />
+    <list default="true" id="fa073dfd-b2b1-48f6-a6c7-b9d5840c4e7f" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/src/list/linkedlist1.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/list/linkedlist1.rs" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -79,6 +81,7 @@
   </component>
   <component name="RustProjectSettings">
     <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
+    <option name="version" value="2" />
   </component>
   <component name="SvnConfiguration">
     <configuration />
