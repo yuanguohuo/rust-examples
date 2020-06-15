@@ -1,7 +1,14 @@
+use std::iter::IntoIterator;
 use std::iter::Iterator;
+use std::ops::Deref;
+
+pub struct Itr<'a, T> {
+    curr: Option<&'a Node<T>>,
+}
 
 pub struct List<T> {
     head: Link<T>,
+    itr: Itr<'_, T>,
 }
 
 type Link<T> = Option<Box<Node<T>>>;
@@ -13,7 +20,10 @@ struct Node<T> {
 
 impl<T> List<T> {
     pub fn new() -> Self {
-        List { head: None }
+        List {
+            head: None,
+            itr: Itr { curr: None },
+        }
     }
 
     pub fn push_front(&mut self, val: T) {
@@ -38,29 +48,11 @@ impl<T> List<T> {
     pub fn front_mut(&mut self) -> Option<&mut T> {
         self.head.as_mut().map(|node| &mut node.val)
     }
-}
 
-pub struct IntoItr<T> {
-    next: Link<T>,
-}
-
-impl<T> Iterator for IntoItr<T> {
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.next.take().map(|node|{
-            self.next = node.next;
-            node.val
-        })
-    }
-}
-
-impl<T> IntoIterator for List<T> {
-    type Item = T;
-    type IntoIter = IntoItr<T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        IntoItr{next:self.head}
+    pub fn reset_itr(&mut self) {
+        self.itr = Itr {
+            curr: self.head.as_ref().map(|node| node.deref()),
+        }
     }
 }
 
@@ -82,6 +74,41 @@ impl<T> Drop for List<T> {
     }
 }
 */
+
+pub struct IntoItr<T> {
+    next: Link<T>,
+}
+
+impl<T> Iterator for IntoItr<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next.take().map(|node| {
+            self.next = node.next;
+            node.val
+        })
+    }
+}
+
+impl<T> IntoIterator for List<T> {
+    type Item = T;
+    type IntoIter = IntoItr<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoItr { next: self.head }
+    }
+}
+
+impl<'a, T> Iterator for List<T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.itr.curr.take().map(|node| {
+            self.itr.curr = Some(&node.next.as_ref().as_deref());
+            &node.val
+        })
+    }
+}
 
 #[cfg(test)]
 mod test {
@@ -150,5 +177,8 @@ mod test {
 
         let mut itr = l.into_iter();
         assert_eq!(Some(3), itr.next());
+        assert_eq!(Some(2), itr.next());
+        assert_eq!(Some(1), itr.next());
+        assert_eq!(None, itr.next());
     }
 }
