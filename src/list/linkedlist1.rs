@@ -1,3 +1,5 @@
+use std::iter::Iterator;
+
 pub struct List<T> {
     head: Link<T>,
 }
@@ -38,6 +40,31 @@ impl<T> List<T> {
     }
 }
 
+pub struct IntoItr<T> {
+    next: Link<T>,
+}
+
+impl<T> Iterator for IntoItr<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next.take().map(|node|{
+            self.next = node.next;
+            node.val
+        })
+    }
+}
+
+impl<T> IntoIterator for List<T> {
+    type Item = T;
+    type IntoIter = IntoItr<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoItr{next:self.head}
+    }
+}
+
+/*
 impl<T> Drop for List<T> {
     fn drop(&mut self) {
         let mut head = self.head.take();
@@ -54,6 +81,7 @@ impl<T> Drop for List<T> {
         }
     }
 }
+*/
 
 #[cfg(test)]
 mod test {
