@@ -137,4 +137,18 @@ mod test {
         assert_eq!(l.front(), None);
         assert_eq!(l.front_mut(), None);
     }
+
+    #[test]
+    fn test_into_itr() {
+        let mut l: List<i32> = List::new();
+        assert_eq!(l.front(), None);
+        assert_eq!(l.front_mut(), None);
+
+        l.push_front(1);
+        l.push_front(2);
+        l.push_front(3);
+
+        let mut itr = l.into_iter();
+        assert_eq!(Some(3), itr.next());
+    }
 }
