@@ -1,14 +1,8 @@
 use std::iter::IntoIterator;
 use std::iter::Iterator;
-use std::ops::Deref;
-
-pub struct Itr<'a, T> {
-    curr: Option<&'a Node<T>>,
-}
 
 pub struct List<T> {
     head: Link<T>,
-    itr: Itr<'_, T>,
 }
 
 type Link<T> = Option<Box<Node<T>>>;
@@ -18,12 +12,24 @@ struct Node<T> {
     next: Link<T>,
 }
 
+pub struct Itr<'a, T> {
+    curr: Option<&'a Node<T>>,
+}
+
+impl<'a, T> Iterator for Itr<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.curr.take().map(|node| {
+            self.curr = node.next.as_ref().map(|next| next.as_ref());
+            &node.val
+        })
+    }
+}
+
 impl<T> List<T> {
     pub fn new() -> Self {
-        List {
-            head: None,
-            itr: Itr { curr: None },
-        }
+        List { head: None }
     }
 
     pub fn push_front(&mut self, val: T) {
@@ -49,10 +55,14 @@ impl<T> List<T> {
         self.head.as_mut().map(|node| &mut node.val)
     }
 
-    pub fn reset_itr(&mut self) {
-        self.itr = Itr {
-            curr: self.head.as_ref().map(|node| node.deref()),
-        }
+    //Yuanguo: the accurate version of 'fn itr()' should be this:
+    //       pub fn itr<'a>(&'a self) -> Itr<'a, T>
+    //meaning that we create Itr with lifetime 'a from &self whose lifetime is also 'a;
+    //but that can be elided into:
+    //       pub fn itr(&self) -> Itr<T>
+    pub fn itr(&self) -> Itr<T> {
+        let curr = self.head.as_ref().map(|node| node.as_ref());
+        Itr { curr }
     }
 }
 
@@ -96,17 +106,6 @@ impl<T> IntoIterator for List<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         IntoItr { next: self.head }
-    }
-}
-
-impl<'a, T> Iterator for List<T> {
-    type Item = &'a T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.itr.curr.take().map(|node| {
-            self.itr.curr = Some(&node.next.as_ref().as_deref());
-            &node.val
-        })
     }
 }
 
@@ -180,5 +179,29 @@ mod test {
         assert_eq!(Some(2), itr.next());
         assert_eq!(Some(1), itr.next());
         assert_eq!(None, itr.next());
+    }
+
+    #[test]
+    fn test_itr() {
+        let mut l: List<i32> = List::new();
+        assert_eq!(l.front(), None);
+        assert_eq!(l.front_mut(), None);
+
+        l.push_front(1);
+        l.push_front(2);
+        l.push_front(3);
+
+        let mut itr = l.itr();
+        assert_eq!(Some(&3), itr.next());
+        assert_eq!(Some(&2), itr.next());
+        assert_eq!(Some(&1), itr.next());
+        assert_eq!(None, itr.next());
+
+        //list l is not modified, so we can iterator over it again by itr1;
+        let mut itr1 = l.itr();
+        assert_eq!(Some(&3), itr1.next());
+        assert_eq!(Some(&2), itr1.next());
+        assert_eq!(Some(&1), itr1.next());
+        assert_eq!(None, itr1.next());
     }
 }
