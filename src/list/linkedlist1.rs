@@ -174,11 +174,14 @@ mod test {
         l.push_front(2);
         l.push_front(3);
 
-        let mut itr = l.into_iter();
+        let mut itr = l.into_iter(); // l is moved here;
         assert_eq!(Some(3), itr.next());
         assert_eq!(Some(2), itr.next());
         assert_eq!(Some(1), itr.next());
         assert_eq!(None, itr.next());
+
+        //l is moved, so we cannot use it again;
+        //let _itr1 = l.into_iter(); //value used here after move
     }
 
     #[test]
