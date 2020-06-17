@@ -27,6 +27,21 @@ impl<'a, T> Iterator for Itr<'a, T> {
     }
 }
 
+pub struct MutItr<'a, T> {
+    curr: Option<&'a mut Node<T>>,
+}
+
+impl<'a, T> Iterator for MutItr<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.curr.take().map(|node| {
+            self.curr = node.next.as_mut().map(|next| next.as_mut());
+            &mut node.val
+        })
+    }
+}
+
 impl<T> List<T> {
     pub fn new() -> Self {
         List { head: None }
@@ -63,6 +78,11 @@ impl<T> List<T> {
     pub fn itr(&self) -> Itr<T> {
         let curr = self.head.as_ref().map(|node| node.as_ref());
         Itr { curr }
+    }
+
+    pub fn mut_itr(&mut self) -> MutItr<T> {
+        let curr = self.head.as_mut().map(|node| node.as_mut());
+        MutItr { curr }
     }
 }
 
@@ -200,11 +220,49 @@ mod test {
         assert_eq!(Some(&1), itr.next());
         assert_eq!(None, itr.next());
 
-        //list l is not modified, so we can iterator over it again by itr1;
+        //list l is not moved, so we can iterator over it again by itr1;
         let mut itr1 = l.itr();
         assert_eq!(Some(&3), itr1.next());
         assert_eq!(Some(&2), itr1.next());
         assert_eq!(Some(&1), itr1.next());
         assert_eq!(None, itr1.next());
+    }
+
+    #[test]
+    fn test_mut_itr() {
+        let mut l: List<i32> = List::new();
+        assert_eq!(l.front(), None);
+        assert_eq!(l.front_mut(), None);
+
+        l.push_front(1);
+        l.push_front(2);
+        l.push_front(3);
+
+        let mut mut_itr = l.mut_itr();
+        assert_eq!(Some(&mut 3), mut_itr.next());
+        assert_eq!(Some(&mut 2), mut_itr.next());
+        assert_eq!(Some(&mut 1), mut_itr.next());
+        assert_eq!(None, mut_itr.next());
+
+        let mut mut_itr1 = l.mut_itr();
+        mut_itr1.next().map(|v| *v = *v * 2);
+        mut_itr1.next().map(|v| *v = *v * 2);
+        mut_itr1.next().map(|v| *v = *v * 2);
+        mut_itr1.next().map(|v| *v = *v * 2);
+        mut_itr1.next().map(|v| *v = *v * 2);
+
+        let mut mut_itr2 = l.mut_itr();
+        assert_eq!(Some(&mut 6), mut_itr2.next());
+        assert_eq!(Some(&mut 4), mut_itr2.next());
+        assert_eq!(Some(&mut 2), mut_itr2.next());
+        assert_eq!(None, mut_itr2.next());
+
+        let ra = &3;
+        let _rb = ra;
+
+        let o1 = Some(ra);
+        let _o2 = o1;
+
+        println!("{} {:?}", ra, o1);
     }
 }
