@@ -118,6 +118,13 @@ impl<T> Iterator for IntoItr<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
+        // 1. curr.take():  it's mem::replace under the hood, setting curr to None and returning
+        //    its original value, say origin;
+        // 2. origin.map(): note that map() takes self (not &self) as argument, so origin is moved;
+        // 3. if origin is None, do nothing (remember that curr was left None in step-1);
+        // 4. if origin is Some(T), T is moved (or copied if it's Copy) to closure, that's to say
+        //    the Box<Node<T>> object inside origin is moved to node, which will be destroyed when
+        //    the closure ends; that is where each node of the list gets destroyed;
         self.curr.take().map(|node| {
             self.curr = node.next;
             node.val
