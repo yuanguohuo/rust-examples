@@ -307,6 +307,6 @@ mod test {
         //总之：实现Drop的类型
         //   1. 可以被move；
         //   2. 但不能被 partially move；
-        //   2. 可以被partially mutated；
+        //   3. 可以被partially mutated；
     }
 }
