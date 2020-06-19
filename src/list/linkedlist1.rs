@@ -20,6 +20,11 @@ impl<'a, T> Iterator for Itr<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
+        /// 1. curr.take():  it's mem::replace under the hood, setting curr to None and returning
+        ///    its original value, say origin;
+        /// 2. origin.map(): note that map() takes self (not &self) as argument, so origin is moved;
+        /// 3. if origin is None, do nothing (remember that curr was left None in step-1);
+        /// 4. if origin is Some(T), T is moved (or copied if it's Copy) to closure;
         self.curr.take().map(|node| {
             self.curr = node.next.as_ref().map(|next| next.as_ref());
             &node.val
