@@ -294,11 +294,19 @@ mod test {
         // destructor. Therefore, we must think of all values whose type implements the
         // `Drop` trait as single units whose fields cannot be moved.
 
-        //let _head = l.head;
+        //1. List<T> cannot be partially moved;
+        //let _head = l.head;   //E0509
 
-        //however, the List<T> can be moved as a unit;
+        //2. List<T> can be moved as a unit;
         let _l = l; //OK!
 
-        //总之：实现Drop的类型，可以被move，但不能被 partially move
+        //3. List<T> can be partially mutated;
+        let mut l2: List<i32> = List::new();
+        l2.head.take();
+
+        //总之：实现Drop的类型
+        //   1. 可以被move；
+        //   2. 但不能被 partially move；
+        //   2. 可以被partially mutated；
     }
 }
