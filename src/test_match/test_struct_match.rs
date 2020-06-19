@@ -28,8 +28,25 @@ impl<'a, 'b> fmt::Display for Foo<'a, 'b> {
     }
 }
 
+pub struct Bar<T> {
+    pub val: T,
+}
+
+impl<T> Bar<T> {
+    pub fn new(val: T) -> Self {
+        Bar { val }
+    }
+}
+
+impl<T: fmt::Display> fmt::Display for Bar<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Bar:[val: {}]", self.val)
+    }
+}
+
 #[cfg(test)]
 mod test {
+    use super::Bar;
     use super::Foo;
 
     #[test]
@@ -59,6 +76,18 @@ mod test {
             }
         }
         //println!("{}", f); //this would not compile, because f was moved;
+
+        let b = Bar::new(i);
+        match b {
+            Bar { val } => println!("matched Bar({})", val),
+        }
+        println!("{}", b);
+
+        let b1 = Bar::new(String::from("hello"));
+        match b1 {
+            Bar { val } => println!("matched Bar({})", val),
+        }
+        //println!("{}", b1); //value borrowed here after partial move
     }
 
     #[test]
@@ -78,12 +107,6 @@ mod test {
                 //iref: would be moved from r.iref; but r is a mut reference, move is not allowed; 注意: &mut和Option(&mut)不是Copy类型；&和Option(&)是Copy类型；
                 //sval: would be moved from r.sval; not allowed;
                 //sref: would be moved from r.sref; not allowed;
-
-                //this would be fine if all members of Foo are Copy. It can be thought this way:
-                //rust would create a brand new Foo from r, as a result, all members would be
-                //moved (unless it is Copy) from r; but on the other hand r is a reference
-                //which cannot be moved. So, this will not compile if any member of r is not Copy;
-
                 println!("matched: [{} {} {} {}]", ival, *iref, sval, *sref);
             }
         }
@@ -106,6 +129,13 @@ mod test {
         }
         println!("{}", f);
         println!("{}", r);
+
+        let b = Bar::new(i);
+        let rb = &b;
+        match rb {
+            &Bar { val } => println!("matched Bar({})", val),
+        }
+        println!("{}", b);
     }
 
     #[test]
