@@ -91,7 +91,6 @@ impl<T> List<T> {
     }
 }
 
-/*
 impl<T> Drop for List<T> {
     fn drop(&mut self) {
         let mut head = self.head.take();
@@ -108,7 +107,6 @@ impl<T> Drop for List<T> {
         }
     }
 }
-*/
 
 pub struct IntoItr<T> {
     curr: Link<T>,
@@ -136,8 +134,18 @@ impl<T> IntoIterator for List<T> {
     type Item = T;
     type IntoIter = IntoItr<T>;
 
+    /*
+     * this will not work, see test_drop_move() below.
+     *
     fn into_iter(self) -> Self::IntoIter {
         IntoItr { curr: self.head }
+    }
+    */
+
+    fn into_iter(mut self) -> Self::IntoIter {
+        IntoItr {
+            curr: self.head.take(),
+        }
     }
 }
 
@@ -268,13 +276,29 @@ mod test {
         assert_eq!(Some(&mut 4), mut_itr2.next());
         assert_eq!(Some(&mut 2), mut_itr2.next());
         assert_eq!(None, mut_itr2.next());
+    }
 
-        let ra = &3;
-        let _rb = ra;
+    #[test]
+    fn test_drop_move() {
+        let l: List<i32> = List::new();
 
-        let o1 = Some(ra);
-        let _o2 = o1;
+        // rustc --explain E0509
+        //
+        // We tried to move a field out of a List<T> instance which
+        // implements the `Drop` trait. However, a struct cannot be dropped if one or
+        // more of its fields have been moved.
+        //
+        // Structs implementing the `Drop` trait have an implicit destructor that gets
+        // called when they go out of scope. This destructor may use the fields of the
+        // struct, so moving out of the struct could make it impossible to run the
+        // destructor. Therefore, we must think of all values whose type implements the
+        // `Drop` trait as single units whose fields cannot be moved.
 
-        println!("{} {:?}", ra, o1);
+        //let _head = l.head;
+
+        //however, the List<T> can be moved as a unit;
+        let _l = l; //OK!
+
+        //总之：实现Drop的类型，可以被move，但不能被 partially move
     }
 }
