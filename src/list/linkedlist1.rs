@@ -20,11 +20,15 @@ impl<'a, T> Iterator for Itr<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // 1. curr.take():  it's mem::replace under the hood, setting curr to None and returning
-        //    its original value, say origin;
-        // 2. origin.map(): note that map() takes self (not &self) as argument, so origin is moved;
-        // 3. if origin is None, do nothing (remember that curr was left None in step-1);
-        // 4. if origin is Some(T), T is moved (or copied if it's Copy) to closure;
+        // 1. self.curr.take():  it's mem::replace under the hood, setting self.curr to None and returning
+        //    its original value, say `origin`;
+        // 2. origin.map(): note that `map()` takes `self` (not `&self`) as argument, so `origin`
+        //    is moved to `self` argument in `map()`;
+        // 3. in `map()`
+        //      a. if `self` is None, return None; we do nothing (remember that curr was left None in step-1);
+        //      b. if `self` is Some(T), T is moved (or copied if it's Copy) to closure;
+        // 4. the closure returns a &Node<T>, say `tmp_node_ref`;
+        // 5. `map()` wraps `tmp_node_ref` in Some, and move the Some to self.curr;
         self.curr.take().map(|node| {
             self.curr = node.next.as_ref().map(|next| next.as_ref());
             &node.val
@@ -93,17 +97,29 @@ impl<T> List<T> {
 
 impl<T> Drop for List<T> {
     fn drop(&mut self) {
+        // self.head.take():  it's mem::replace under the hood, setting self.head to None and returning
+        // its original value to head;
         let mut head = self.head.take();
-        while let Some(mut node) = head {
-            head = node.next.take();
-            // node goes out of scope and gets dropped here;
-            // but its Node's `next` field has been set to None by take() method,
-            // so no unbounded recursion occurs.
 
-            //Yuanguo:
-            //  head = node.next;
-            //should be fine too, because node.next is moved (not a None or Some, just uninitialized),
-            //so, no destruction work to do;
+        // `while let` is a shortcut of match; here we match value (`head`) by value (`Some(mut node)`):
+        //          the Box<Node<T>> instance in `head` is moved to `node`;
+        // that's to say, `head` is partial moved; that's OK, we will NOT access it any more: the variable
+        // `head` is re-assigned with another value soon;
+        while let Some(mut node) = head {
+            // the main resource, Box<Node<T>> instance, has been moved to `node` now, let us see how it
+            // gets dropped;
+
+            // 1. `next` is set to None here (remember take() is mem::replace); so `node` becomes an
+            //     instance of: Box<Node{val:val, next:None}>;
+            head = node.next.take();
+
+            // this should be fine too: the only difference is that node.next is moved instead of set
+            // to None by `take()`, left as uninitialized;
+            //head = node.next;
+
+            // 2. `node` goes out of scope and gets dropped here;
+            //    remember the inside Node's `next` has been set to None by take() method (or initialized),
+            //    so no unbounded recursion occurs.
         }
     }
 }
@@ -294,19 +310,19 @@ mod test {
         // destructor. Therefore, we must think of all values whose type implements the
         // `Drop` trait as single units whose fields cannot be moved.
 
-        //1. List<T> cannot be partially moved;
+        //1. List<T> cannot be partial moved;
         //let _head = l.head;   //E0509
 
         //2. List<T> can be moved as a unit;
         let _l = l; //OK!
 
-        //3. List<T> can be partially mutated;
+        //3. List<T> can be partial mutated;
         let mut l2: List<i32> = List::new();
         l2.head.take();
 
         //总之：实现Drop的类型
         //   1. 可以被move；
-        //   2. 但不能被 partially move；
-        //   3. 可以被partially mutated；
+        //   2. 但不能被 partial move；
+        //   3. 可以被partial mutated；
     }
 }
