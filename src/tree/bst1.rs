@@ -1,3 +1,6 @@
+use std::collections::LinkedList;
+use std::ops::Deref;
+
 pub struct Node<T> {
     val: T,
     left: Link<T>,
@@ -6,7 +9,7 @@ pub struct Node<T> {
 
 type Link<T> = Option<Box<Node<T>>>;
 
-pub fn preorder<T, F>(link: &Link<T>, f: F)
+pub fn preorder_recursive<T, F>(link: &Link<T>, f: F)
 where
     F: Fn(&T) + Copy,
 {
@@ -15,6 +18,32 @@ where
         f(&boxed_node.val);
         preorder(&boxed_node.left, f);
         preorder(&boxed_node.right, f);
+    }
+}
+
+pub fn preorder<T, F>(link: &Link<T>, f: F)
+where
+    F: Fn(&T) + Copy,
+{
+    let mut stack: LinkedList<&Node<T>> = LinkedList::new();
+
+    // if link is not None, push it into stack;
+    if let Some(boxed_node) = link {
+        stack.push_back(boxed_node.deref());
+    }
+
+    // same as while(!stack.is_empty()) {...}
+    while let Some(node) = stack.pop_back() {
+        f(&node.val);
+
+        // why not `if let Some(boxed_node) = &node.right`?
+        // because that's match value by value, causing node.right partial moved;
+        if let Some(boxed_node) = &node.right {
+            stack.push_back(boxed_node.deref());
+        }
+        if let Some(boxed_node) = &node.left {
+            stack.push_back(boxed_node.deref());
+        }
     }
 }
 
@@ -63,6 +92,13 @@ impl<T: Ord> BSTree<T> {
     {
         preorder(&self.root, f);
     }
+
+    pub fn preorder_recursive<F>(&self, f: F)
+    where
+        F: Fn(&T) + Copy,
+    {
+        preorder_recursive(&self.root, f);
+    }
 }
 
 #[cfg(test)]
@@ -70,15 +106,28 @@ mod test {
     use super::BSTree;
 
     #[test]
-    pub fn test_basic() {
+    pub fn test_preorder() {
         let mut bst: BSTree<i32> = BSTree::new();
-        bst.insert(2);
-        bst.insert(1);
-        bst.insert(3);
+        let insert_order = vec![8, 4, 10, 6, 5, 7, 9, 12, 13];
+        for val in insert_order.iter() {
+            bst.insert(*val);
+        }
+
+        let mut _i: usize = 0;
+        let _preorder_list = vec![8, 4, 6, 5, 7, 10, 9, 12, 13];
+
+        println!("preorder_recursive");
+        bst.preorder_recursive(|v: &i32| {
+            println!("{}", v);
+            //assert_eq!(*v, preorder_list[i]);
+            //i = i+1;
+        });
 
         println!("preorder");
         bst.preorder(|v: &i32| {
             println!("{}", v);
+            //assert_eq!(*v, preorder_list[i]);
+            //i = i+1;
         });
     }
 }
