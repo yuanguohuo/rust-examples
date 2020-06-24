@@ -9,44 +9,6 @@ pub struct Node<T> {
 
 type Link<T> = Option<Box<Node<T>>>;
 
-pub fn preorder_recursive<T, F>(link: &Link<T>, f: F)
-where
-    F: Fn(&T) + Copy,
-{
-    //`if let` is a shortcut for match, same as `while let` in BSTree::insert(); see comments there;
-    if let Some(boxed_node) = link {
-        f(&boxed_node.val);
-        preorder(&boxed_node.left, f);
-        preorder(&boxed_node.right, f);
-    }
-}
-
-pub fn preorder<T, F>(link: &Link<T>, f: F)
-where
-    F: Fn(&T) + Copy,
-{
-    let mut stack: LinkedList<&Node<T>> = LinkedList::new();
-
-    // if link is not None, push it into stack;
-    if let Some(boxed_node) = link {
-        stack.push_back(boxed_node.deref());
-    }
-
-    // same as while(!stack.is_empty()) {...}
-    while let Some(node) = stack.pop_back() {
-        f(&node.val);
-
-        // why not `if let Some(boxed_node) = &node.right`?
-        // because that's match value by value, causing node.right partial moved;
-        if let Some(boxed_node) = &node.right {
-            stack.push_back(boxed_node.deref());
-        }
-        if let Some(boxed_node) = &node.left {
-            stack.push_back(boxed_node.deref());
-        }
-    }
-}
-
 pub struct BSTree<T> {
     root: Link<T>,
 }
@@ -99,6 +61,75 @@ impl<T: Ord> BSTree<T> {
     {
         preorder_recursive(&self.root, f);
     }
+
+    pub fn get_preorder_itr(&self) -> PreorderItr<T> {
+        let mut stack = LinkedList::new();
+        if let Some(boxed_node) = &self.root {
+            stack.push_back(boxed_node.deref());
+        }
+        PreorderItr { stack }
+    }
+}
+
+pub fn preorder_recursive<T, F>(link: &Link<T>, f: F)
+where
+    F: Fn(&T) + Copy,
+{
+    //`if let` is a shortcut for match, same as `while let` in BSTree::insert(); see comments there;
+    if let Some(boxed_node) = link {
+        f(&boxed_node.val);
+        preorder(&boxed_node.left, f);
+        preorder(&boxed_node.right, f);
+    }
+}
+
+pub fn preorder<T, F>(link: &Link<T>, f: F)
+where
+    F: Fn(&T) + Copy,
+{
+    let mut stack: LinkedList<&Node<T>> = LinkedList::new();
+
+    // if link is not None, push it into stack;
+    if let Some(boxed_node) = link {
+        stack.push_back(boxed_node.deref());
+    }
+
+    // same as while(!stack.is_empty()) {...}
+    while let Some(node) = stack.pop_back() {
+        f(&node.val);
+
+        // why not `if let Some(boxed_node) = node.right`?
+        // because that's match value by value, causing node.right partial moved;
+        if let Some(boxed_node) = &node.right {
+            stack.push_back(boxed_node.deref());
+        }
+        if let Some(boxed_node) = &node.left {
+            stack.push_back(boxed_node.deref());
+        }
+    }
+}
+
+pub struct PreorderItr<'a, T> {
+    stack: LinkedList<&'a Node<T>>,
+}
+
+impl<'a, T> Iterator for PreorderItr<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.stack.pop_back() {
+            None => None,
+            Some(node) => {
+                if let Some(boxed_node) = &node.right {
+                    self.stack.push_back(boxed_node.deref());
+                }
+                if let Some(boxed_node) = &node.left {
+                    self.stack.push_back(boxed_node.deref());
+                }
+                Some(&node.val)
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -129,5 +160,17 @@ mod test {
             //assert_eq!(*v, preorder_list[i]);
             //i = i+1;
         });
+
+        println!("preorder_itr");
+        let mut pre_itr = bst.get_preorder_itr();
+
+        //this would not compile, because we have an immutable reference
+        //in `pre_itr`, so mutation is not allowed;
+        //wonderful Rust!
+        //bst.insert(100);
+
+        while let Some(v) = pre_itr.next() {
+            println!("{}", v);
+        }
     }
 }
