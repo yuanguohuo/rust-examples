@@ -63,11 +63,7 @@ impl<T: Ord> BSTree<T> {
     }
 
     pub fn get_preorder_itr(&self) -> PreorderItr<T> {
-        let mut stack = LinkedList::new();
-        if let Some(boxed_node) = &self.root {
-            stack.push_back(boxed_node.deref());
-        }
-        PreorderItr { stack }
+        PreorderItr::new(&self.root)
     }
 
     pub fn get_inorder_itr(&self) -> InorderItr<T> {
@@ -133,6 +129,16 @@ impl<'a, T> Iterator for PreorderItr<'a, T> {
                 Some(&node.val)
             }
         }
+    }
+}
+
+impl<'a, T> PreorderItr<'a, T> {
+    pub fn new(link: &'a Link<T>) -> Self {
+        let mut stack: LinkedList<&'a Node<T>> = LinkedList::new();
+        if let Some(boxed_node) = link {
+            stack.push_back(boxed_node.deref());
+        }
+        PreorderItr { stack }
     }
 }
 
