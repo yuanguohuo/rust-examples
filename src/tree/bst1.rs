@@ -69,6 +69,10 @@ impl<T: Ord> BSTree<T> {
         }
         PreorderItr { stack }
     }
+
+    pub fn get_inorder_itr(&self) -> InorderItr<T> {
+        InorderItr::new(&self.root)
+    }
 }
 
 pub fn preorder_recursive<T, F>(link: &Link<T>, f: F)
@@ -132,6 +136,43 @@ impl<'a, T> Iterator for PreorderItr<'a, T> {
     }
 }
 
+pub struct InorderItr<'a, T> {
+    stack: LinkedList<&'a Node<T>>,
+}
+
+impl<'a, T> Iterator for InorderItr<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.stack.pop_back() {
+            None => None,
+            Some(node) => {
+                self.push_till_next(&node.right);
+                Some(&node.val)
+            }
+        }
+    }
+}
+
+impl<'a, T> InorderItr<'a, T> {
+    pub fn new(link: &'a Link<T>) -> Self {
+        let mut itr = InorderItr {
+            stack: LinkedList::new(),
+        };
+        itr.push_till_next(link);
+        itr
+    }
+
+    // `link` is a shared (immutable) ref to Link<T> instance (the instance cannot be mutated); but
+    // `link` can ref different Link<T> instances, hence the `mut` before it;
+    fn push_till_next(&mut self, mut link: &'a Link<T>) {
+        while let Some(boxed_node) = link {
+            self.stack.push_back(boxed_node.deref());
+            link = &boxed_node.left;
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::BSTree;
@@ -161,7 +202,6 @@ mod test {
             //i = i+1;
         });
 
-        println!("preorder_itr");
         let mut pre_itr = bst.get_preorder_itr();
 
         //this would not compile, because we have an immutable reference
@@ -169,7 +209,29 @@ mod test {
         //wonderful Rust!
         //bst.insert(100);
 
+        println!("preorder_itr");
         while let Some(v) = pre_itr.next() {
+            println!("{}", v);
+        }
+    }
+
+    #[test]
+    pub fn test_inorder() {
+        let mut bst: BSTree<String> = BSTree::new();
+        let insert_order = vec!["f", "h", "d", "e", "a", "b", "c", "g", "i"];
+        for val in insert_order.iter() {
+            bst.insert(String::from(*val));
+        }
+
+        println!("preorder_itr");
+        let mut pre_itr = bst.get_preorder_itr();
+        while let Some(v) = pre_itr.next() {
+            println!("{}", v);
+        }
+
+        println!("inorder_itr");
+        let mut in_itr = bst.get_inorder_itr();
+        while let Some(v) = in_itr.next() {
             println!("{}", v);
         }
     }
