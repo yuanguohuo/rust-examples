@@ -66,6 +66,20 @@ impl<T: Ord> BSTree<T> {
         PreorderItr::new(&self.root)
     }
 
+    pub fn inorder<F>(&self, f: F)
+    where
+        F: Fn(&T) + Copy,
+    {
+        inorder(&self.root, f);
+    }
+
+    pub fn inorder_recursive<F>(&self, f: F)
+    where
+        F: Fn(&T) + Copy,
+    {
+        inorder_recursive(&self.root, f);
+    }
+
     pub fn get_inorder_itr(&self) -> InorderItr<T> {
         InorderItr::new(&self.root)
     }
@@ -106,6 +120,40 @@ where
         if let Some(boxed_node) = &node.left {
             stack.push_back(boxed_node.deref());
         }
+    }
+}
+
+pub fn inorder_recursive<T, F>(link: &Link<T>, f: F)
+where
+    F: Fn(&T) + Copy,
+{
+    if let Some(boxed_node) = link {
+        inorder_recursive(&boxed_node.left, f);
+        f(&boxed_node.val);
+        inorder_recursive(&boxed_node.right, f);
+    }
+}
+
+pub fn inorder<T, F>(mut link: &Link<T>, f: F)
+where
+    F: Fn(&T) + Copy,
+{
+    let mut stack: LinkedList<&Node<T>> = LinkedList::new();
+
+    loop {
+        while let Some(boxed_node) = link {
+            stack.push_back(boxed_node.deref());
+            link = &boxed_node.left;
+        }
+
+        if stack.is_empty() {
+            break;
+        }
+
+        let node = stack.pop_back().unwrap();
+        f(&node.val);
+
+        link = &node.right;
     }
 }
 
@@ -229,11 +277,15 @@ mod test {
             bst.insert(String::from(*val));
         }
 
-        println!("preorder_itr");
-        let mut pre_itr = bst.get_preorder_itr();
-        while let Some(v) = pre_itr.next() {
+        println!("inorder");
+        bst.inorder(|v| {
             println!("{}", v);
-        }
+        });
+
+        println!("inorder_recursive");
+        bst.inorder_recursive(|v| {
+            println!("{}", v);
+        });
 
         println!("inorder_itr");
         let mut in_itr = bst.get_inorder_itr();
