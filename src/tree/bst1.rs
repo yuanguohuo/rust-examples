@@ -244,17 +244,19 @@ mod test {
 
         println!("preorder_recursive");
         bst.preorder_recursive(|v: &i32| {
-            println!("{}", v);
+            print!("{} ", v);
             //assert_eq!(*v, preorder_list[i]);
             //i = i+1;
         });
+        println!();
 
         println!("preorder");
         bst.preorder(|v: &i32| {
-            println!("{}", v);
+            print!("{} ", v);
             //assert_eq!(*v, preorder_list[i]);
             //i = i+1;
         });
+        println!();
 
         let mut pre_itr = bst.get_preorder_itr();
 
@@ -265,8 +267,15 @@ mod test {
 
         println!("preorder_itr");
         while let Some(v) = pre_itr.next() {
-            println!("{}", v);
+            print!("{} ", v);
         }
+        println!();
+
+        let pre_itr2 = bst.get_preorder_itr();
+        let c: Vec<&i32> = pre_itr2.collect();
+        println!("{:?}", c);
+        let expect: Vec<&i32> = vec![&8, &4, &6, &5, &7, &10, &9, &12, &13];
+        assert_eq!(c, expect);
     }
 
     #[test]
@@ -279,18 +288,37 @@ mod test {
 
         println!("inorder");
         bst.inorder(|v| {
-            println!("{}", v);
+            print!("{} ", v);
         });
+        println!();
 
         println!("inorder_recursive");
         bst.inorder_recursive(|v| {
-            println!("{}", v);
+            print!("{} ", v);
         });
+        println!();
 
         println!("inorder_itr");
         let mut in_itr = bst.get_inorder_itr();
         while let Some(v) = in_itr.next() {
-            println!("{}", v);
+            print!("{}", v);
         }
+        println!();
+
+        let in_itr2 = bst.get_inorder_itr();
+        let c: Vec<&String> = in_itr2.collect();
+        println!("{:?}", c);
+
+        let ra = &String::from("a");
+        let rb = &String::from("b");
+        let rc = &String::from("c");
+        let rd = &String::from("d");
+        let re = &String::from("e");
+        let rf = &String::from("f");
+        let rg = &String::from("g");
+        let rh = &String::from("h");
+        let ri = &String::from("i");
+        let expect = vec![ra, rb, rc, rd, re, rf, rg, rh, ri];
+        assert_eq!(c, expect);
     }
 }
